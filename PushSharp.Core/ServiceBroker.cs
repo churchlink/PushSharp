@@ -44,6 +44,15 @@ namespace PushSharp.Core
         object lockWorkers;
         bool running;
 
+		public IServiceConnection<TNotification>[] GetConnections()
+		{
+			lock(lockWorkers) {
+				var arr = workers?.Select(w => w.Connection).ToArray();
+				return arr;
+			}
+		}
+
+
         public virtual void QueueNotification (TNotification notification)
         {
             notifications.Add (notification);

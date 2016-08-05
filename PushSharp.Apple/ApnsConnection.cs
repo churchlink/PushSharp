@@ -135,15 +135,7 @@ namespace PushSharp.Apple
 
                     for (var i = 0; i <= Configuration.InternalBatchFailureRetryCount; i++) {
 
-                        await connectingSemaphore.WaitAsync ();
-
-                        try {
-                            // See if we need to connect
-                            if (!socketCanWrite () || i > 0)
-                                await connect ();
-                        } finally {
-                            connectingSemaphore.Release ();
-                        }
+						await connectIfCannotWrite(i > 0);
                 
                         try {
                             await networkStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
@@ -296,7 +288,7 @@ namespace PushSharp.Apple
             disconnect ();
         }
 
-        bool socketCanWrite ()
+        public bool socketCanWrite ()
         {
             if (client == null)
                 return false;
@@ -314,7 +306,28 @@ namespace PushSharp.Apple
             return p;
         }
 
-        async Task connect ()
+		/// <summary>
+		/// Locks on the <see cref="connectingSemaphore"/>, then 
+		/// calls <see cref="connect"/> if either <paramref name="forceReconnect"/>
+		/// was true or if socketCanWrite returns false. If <paramref name="forceReconnect"/> is true,
+		/// benefit of calling this over simply connect is it uses the <see cref="connectingSemaphore"/>.
+		/// </summary>
+		/// <param name="forceReconnect">True to connect regardless.</param>
+		public async Task connectIfCannotWrite(bool forceReconnect = false)
+		{
+			await connectingSemaphore.WaitAsync();
+
+			try {
+				// See if we need to connect
+				if(forceReconnect || !socketCanWrite())
+					await connect();
+			}
+			finally {
+				connectingSemaphore.Release();
+			}
+		}
+
+		public async Task connect ()
         {            
             if (client != null)
                 disconnect ();

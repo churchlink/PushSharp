@@ -1,6 +1,7 @@
 ﻿using System;
 using PushSharp.Core;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace PushSharp.Apple
 {
@@ -24,11 +25,26 @@ namespace PushSharp.Apple
         public ApnsServiceBroker (ApnsConfiguration configuration) : base (new ApnsServiceConnectionFactory (configuration))
         {
         }
-    }
+
+		public ApnsServiceBroker(ApnsConfiguration configuration, Action<ApnsConnection> getNewApnsConnection) 
+			: base(new ApnsServiceConnectionFactory(configuration))
+		{
+		}
+
+		public ApnsConnection[] GetApnsConnections()
+		{
+			var arr = GetConnections()
+				?.Select(c => (c as ApnsServiceConnection)?.connection)
+				.ToArray();
+			return arr;
+		}
+
+	}
+
 
     public class ApnsServiceConnection : IServiceConnection<ApnsNotification>
     {
-        readonly ApnsConnection connection;
+        public readonly ApnsConnection connection;
 
         public ApnsServiceConnection (ApnsConfiguration configuration)
         {
